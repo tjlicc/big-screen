@@ -43,13 +43,23 @@
 
   new Vue({
     el: '#app',
+    data() {
+      return {
+        layer: null
+      }
+    },
+    beforeDestory() {
+      if (this.layer) {
+        this.layer = null
+      }
+    },
     mounted() {
       // draw map
       const paper = new spritejs.Scene('#paper', {
         resolution: [1000, 600],
         stickMode: 'width',
       })
-      const layer = paper.layer()
+      this.layer = paper.layer()
       svgData.forEach(data => {
         const path = new Path()
         path.attr({
@@ -61,14 +71,65 @@
           scale: 1.1,
           transformOrigin: [500, 300]
         })
-        layer.append(path)
+        this.layer.append(path)
       })
 
+      // find xinjiang
+      let xinjiangPath = this.layer.children.find(child => {
+        return child.name == '新疆'
+      }).path
+      this.drwaCylinder(xinjiangPath.d, 30)
+      
       // find fujian
-      let fujianPath = layer.children.find(child => {
+      let fujianPath = this.layer.children.find(child => {
         return child.name == '福建'
       }).path
-      console.log(fujianPath)
+      this.drwaCylinder(fujianPath.d, 20)
+
+      // find xizang
+      let xizangPath = this.layer.children.find(child => {
+        return child.name == '西藏'
+      }).path
+      this.drwaCylinder(xizangPath.d, 10)
+      
+      
+    },
+    methods: {
+      /**
+       * 绘制省份浮起效果 
+       */
+      drwaCylinder(svgPath, zHeight) {
+        let offset = 1
+        let startColor = [26, 45, 115]
+        let endColor = [52, 81, 213]
+
+        let rStepLenght = this.getStepLength(endColor[0], endColor[0], zHeight)
+        let gStepLenght = this.getStepLength(endColor[1], endColor[1], zHeight)
+        let bStepLenght = this.getStepLength(endColor[2], endColor[2], zHeight)
+
+        for (let i = 0; i < zHeight; i++) {
+          const path = new Path()
+          let r = startColor[0] + rStepLenght * (i + 1),
+            g = startColor[1] + gStepLenght * (i + 1),
+            b = startColor[2] + bStepLenght * (i + 1);
+          path.attr({
+            fillColor: `rgb(${endColor[0]}, ${endColor[1]}, ${endColor[2]})`,
+            strokeColor: `rgb(${r}, ${g}, ${b})`,
+            d: svgPath,
+            scale: 1.1,
+            translate: [0, -(offset++)],
+            transformOrigin: [500, 300]
+          })
+          this.layer.append(path)
+        }
+      },
+
+      /**
+       * 计算步长
+       */
+      getStepLength(end, start, steps) {
+        return (end - start) / steps
+      }
     }
   })
 </script>
