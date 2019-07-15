@@ -40,17 +40,49 @@
 <script>
   let svgData = chinaSVGData
   const { Path } = spritejs
+  const staticFloatProvs = [
+    {
+      name: '新疆',
+      height: 10
+    },
+    {
+      name: '青海',
+      height: 20
+    },
+    {
+      name: '西藏',
+      height: 10
+    },
+    {
+      name: '内蒙古',
+      height: 10
+    },
+  ]
 
   new Vue({
     el: '#app',
     data() {
       return {
-        layer: null
+        // 背景层
+        bgLayer: null,
+
+        // 固定悬浮层
+        staticLayer: null,
+
+        // 点击展示层
+        activeSprites: [],
+        activeLayer: null,
       }
     },
     beforeDestory() {
-      if (this.layer) {
-        this.layer = null
+      if (this.bgLayer) {
+        this.bgLayer = null
+      }
+      if (this.staticLayer) {
+        this.staticLayer = null
+      }
+      if (this.activeLayer) {
+        this.activeLayer = null
       }
     },
     mounted() {
@@ -59,7 +91,9 @@
         resolution: [1000, 600],
         stickMode: 'width',
       })
-      this.layer = paper.layer()
+      this.bgLayer = paper.layer()
+      this.staticLayer = paper.layer()
+      this.activeLayer = paper.layer()
       svgData.forEach(data => {
         const path = new Path()
         path.attr({
@@ -68,40 +102,39 @@
           strokeColor: '#111',
           lineWidth: 0,
           d: data.d,
-          scale: 1.1,
-          transformOrigin: [500, 300]
         })
-        this.layer.append(path)
+        this.bgLayer.append(path)
       })
 
-      // find xinjiang
-      let xinjiangPath = this.layer.children.find(child => {
-        return child.name == '新疆'
-      }).path
-      this.drwaCylinder(xinjiangPath.d, 30)
-      
-      // find fujian
-      let fujianPath = this.layer.children.find(child => {
-        return child.name == '福建'
-      }).path
-      this.drwaCylinder(fujianPath.d, 20)
+      // draw static float prov
+      staticFloatProvs.forEach(item => {
+        let path = this.bgLayer.children.find(child => {
+          return child.name == item.name
+        }).path
+        this.drawCylinder({
+          name: item.name,
+          svgPath: path.d,
+          zHeight: item.height,
+          startColor: [26, 45, 115],
+          endColor: [52, 81, 213],
+          layer: this.staticLayer
+        })
+      })
 
-      // find xizang
-      let xizangPath = this.layer.children.find(child => {
-        return child.name == '西藏'
-      }).path
-      this.drwaCylinder(xizangPath.d, 10)
-      
-      
+      // add event listener
+      this.bgLayer.on('click', event => {
+        let targetSprite = event.targetSprites[0] || {}
+        if (targetSprite.name) {
+          this.drawActive(targetSprite)
+        }
+      })
     },
     methods: {
       /**
        * 绘制省份浮起效果 
        */
-      drwaCylinder(svgPath, zHeight) {
+      drawCylinder({ name, svgPath, zHeight, startColor, endColor, layer, afterDraw }) {
         let offset = 1
-        let startColor = [26, 45, 115]
-        let endColor = [52, 81, 213]
 
         let rStepLenght = this.getStepLength(endColor[0], endColor[0], zHeight)
         let gStepLenght = this.getStepLength(endColor[1], endColor[1], zHeight)
@@ -113,15 +146,50 @@
             g = startColor[1] + gStepLenght * (i + 1),
             b = startColor[2] + bStepLenght * (i + 1);
           path.attr({
+            name,
             fillColor: `rgb(${endColor[0]}, ${endColor[1]}, ${endColor[2]})`,
             strokeColor: `rgb(${r}, ${g}, ${b})`,
             d: svgPath,
-            scale: 1.1,
             translate: [0, -(offset++)],
-            transformOrigin: [500, 300]
           })
-          this.layer.append(path)
+          layer.append(path)
+
+          afterDraw && afterDraw(path)
         }
+      },
+
+      /**
+       * 绘制选中效果
+       */
+      drawActive(targetSprite) {
+        // 清空已经绘制的图形
+        this.activeSprites.forEach(item => {
+          item.remove()
+        })
+        this.activeSprites = []
+
+        // 绘制浮起的图层
+        zHeight = 5
+        let staticFloatProv = staticFloatProvs.find(item => {
+          return item.name == targetSprite.name
+        })
+        if(staticFloatProv) {
+          zHeight = staticFloatProv.height
+        }
+
+        this.drawCylinder({
+          name: targetSprite.name,
+          svgPath: targetSprite.path.d,
+          zHeight,
+          startColor: [129, 29, 44],
+          endColor: [252, 47, 47],
+          layer: this.activeLayer,
+          afterDraw: (sprite) => {
+            this.activeSprites.push(sprite)
+          }
+        })
+
+        // 绘制侧边悬浮的弹窗
       },
 
       /**
