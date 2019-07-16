@@ -104,6 +104,22 @@
           d: data.d,
         })
         this.bgLayer.append(path)
+        path.on('click', event => {
+          let targetSprite = event.target || {}
+          if (targetSprite.name) {
+            this.drawActive(targetSprite)
+          }
+        })
+        path.on('mouseenter', event => {
+          path.attr({
+            fillColor: '#475566'
+          })
+        })
+        path.on('mouseleave', event => {
+          path.attr({
+            fillColor: '#323c48'
+          })
+        })
       })
 
       // draw static float prov
@@ -117,16 +133,28 @@
           zHeight: item.height,
           startColor: [26, 45, 115],
           endColor: [52, 81, 213],
-          layer: this.staticLayer
+          layer: this.staticLayer,
+          afterDraw: (sprite, isLast) => {
+            if (isLast) {
+              sprite.on('click', event => {
+                let targetSprite = event.target || {}
+                if (targetSprite.name) {
+                  this.drawActive(targetSprite)
+                }
+              })
+              sprite.on('mouseenter', event => {
+                sprite.attr({
+                  fillColor: '#5e75de'
+                })
+              })
+              sprite.on('mouseleave', event => {
+                sprite.attr({
+                  fillColor: '#3451d5'
+                })
+              })
+            }
+          }
         })
-      })
-
-      // add event listener
-      this.bgLayer.on('click', event => {
-        let targetSprite = event.targetSprites[0] || {}
-        if (targetSprite.name) {
-          this.drawActive(targetSprite)
-        }
       })
     },
     methods: {
@@ -154,7 +182,7 @@
           })
           layer.append(path)
 
-          afterDraw && afterDraw(path)
+          afterDraw && afterDraw(path, i == zHeight - 1)
         }
       },
 
@@ -169,11 +197,11 @@
         this.activeSprites = []
 
         // 绘制浮起的图层
-        zHeight = 5
+        zHeight = 8
         let staticFloatProv = staticFloatProvs.find(item => {
           return item.name == targetSprite.name
         })
-        if(staticFloatProv) {
+        if (staticFloatProv) {
           zHeight = staticFloatProv.height
         }
 
