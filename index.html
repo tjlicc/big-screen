@@ -24,6 +24,7 @@
       height: 600px;
       margin: 0 auto;
       margin-top: 50px;
+      overflow: auto;
     }
 
     .paper {
@@ -33,7 +34,7 @@
 
     .float-panel {
       position: absolute;
-      width: 340px;
+      width: 200px;
       background-color: transparent;
     }
 
@@ -344,10 +345,25 @@
           }
         })
 
+        // TODO 绘制点击区域
+        
+
         // 绘制侧边悬浮的弹窗
+        let panelW = 200
+        let panelH = 180
+        let left = event.x + 50
+        let top = event.y - 50
+
+        if (left + panelW > 1000) {
+          left = event.x - panelW - 50
+        }
+        if (top + panelH > 600) {
+          top = 600 - panelH - 50
+        }
+
         this.floatPanelStyle = {
-          left: (event.x + 50) + 'px',
-          top: (event.y - 50) + 'px',
+          left: `${left}px`,
+          top: `${top}px`,
         }
         this.activeData = {
           name: targetSprite.name
