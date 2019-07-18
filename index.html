@@ -114,7 +114,7 @@
 <body>
   <div id="app">
     <div class="paper" id="paper"></div>
-    <div v-if="activeSprites.length > 0" class="float-panel" :style="floatPanelStyle">
+    <div v-if="activeData.name" class="float-panel" :style="floatPanelStyle">
       <div class="prov-name">{{ activeData.name }}</div>
       <div class="box">
         <div class="title">线索数</div>
@@ -179,6 +179,7 @@
       height: 10
     },
   ]
+  const pointImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACMAAAAWCAYAAABKbiVHAAADK0lEQVRIS7WWR44UQRBFX+K9F957t0BC4gKsOQAbDoCQOAsS4gBsOABrLoDEDhjMILwVw+A9JHpNxJAU00w3EiWlqqs7O/Pljx8RVRjgqrWWmJb3aQP87XvMqd5LKb37365cvO+cAHHzGcB0YBZwGDgCHAQ2APOBd8B94BJwHrgAfAa+AV+B71MBTQoTAP7mEECYOcAh4BSwe6pTAteAk8BF4KMwAaZCdTKwfjBuPjNUmNuAnAV8HvT6ABxrgHxWrS+llAzjxFq/wTSKCDIbWAAsA1YCp4E9g1I080aAE8Az4AXwFvgkUFehLkwqYkiWAEsDRF+cCaWG5VGJ4+EngcaBlxG63xSagAlVMjQLgRXAemB7KHI0AIeFceNzgAqNAg+A58CbJmQ/My5XDpg2NJuAfcD+gNkVIZsyAxtaNzE01wPmMnAFuNuGLM3chTE8G4GdgDBb4vNeYE0YeVgYM+kxcBW4AdwOGD/fM1yTwZglnn5VKLA2gDStY3Wk+bBhss48CWUMlao8CmWeqlopxSz7GaZaqx7RGwJZwNK4/0uZNLKFUpDRUsqbUmvVJ548q6tAi8PAqiPQDmAbsDwq8aDqWHnHgFvAzQiRqmjgVwGSVXpEmK2hhBtY8s2oeZ201j96aV0A6a1uv+qJ3PQjvSLIw/CG4bFdpCrvo9YI7DUuzIHGC24gUGbVooDSL8JYbyyCfm9onZcHsIi5sAXNtH0dvhBAo+oba4zfZ+Fzfh7gWxcmfdQqZMgSIOGsyPpKBQ2rzVO5jb8ndtNUwM0TzNC0irSdvAfThim9kAplW1ABh+YWzpEQzhHeU6pOQrmxQ5OqVo5UsPtK0QtTa+DWmNm1bREOT69XVCMBNH129ezK+crgpqqgdwT0d0eva3cywP+MtKlttrjwZJcwuakq+Jywec9N8u7GvfeYeHX4o0vHRoLc6qV20w489eYIRb/U/ec3vT4LGsI7pRTV+9WbGiiNafYYjv91Gb4npRSNPnH17TO1Vg1qkTODhnmh6ncAM82sGsvy3504UNOrteoTX7SEyszSxOkl19Erxl9vaN7MHiHellKyuPVV+wdAWh7Gs+oE4wAAAABJRU5ErkJggg=='
 
   new Vue({
     el: '#app',
@@ -323,6 +324,9 @@
           item.remove()
         })
         this.activeSprites = []
+        this.activeData = {
+          name: '',
+        }
 
         // 绘制浮起的图层
         zHeight = 8
@@ -345,10 +349,16 @@
           }
         })
 
-        // TODO 绘制点击区域
-        
+        // 绘制点击区域
+        const point = new Sprite(pointImg)
+        point.attr({
+          anchor: .5,
+          pos: [event.x, event.y],
+        })
+        this.activeLayer.append(point)
+        this.activeSprites.push(point)
 
-        // 绘制侧边悬浮的弹窗
+        // 计算侧边悬浮弹窗的位置
         let panelW = 200
         let panelH = 180
         let left = event.x + 50
@@ -361,6 +371,38 @@
           top = 600 - panelH - 50
         }
 
+        // 绘制引导线和终点
+        const line = new Path()
+        const lineEnd = new Path()
+        if (left < event.x) {
+          line.attr({
+            d: `M${event.x},${event.y}l${0},${(top + 32) - event.y}l${(left + 200) - event.x},${0}`,
+            strokeColor: '#fff',
+            lineWidth: 1,
+            lineCap: 'round',
+          })
+          lineEnd.attr({
+            d: `M${(left + 200)},${top + 32 - 5}A5,5,0,0,1,${(left + 200)},${top + 32 + 5}z`,
+            fillColor: '#fff',
+          })
+        } else {
+          line.attr({
+            d: `M${event.x},${event.y}l${0},${(top + 10) - event.y}l${left - event.x},${0}`,
+            strokeColor: '#fff',
+            lineWidth: 1,
+            lineCap: 'round',
+          })
+          lineEnd.attr({
+            d: `M${left},${top + 10 - 5}A5,5,0,0,0,${left},${top + 10 + 5}z`,
+            fillColor: '#fff'
+          })
+        }
+        this.activeLayer.append(line)
+        this.activeSprites.push(line)
+        this.activeLayer.append(lineEnd)
+        this.activeSprites.push(lineEnd)
+
+        // 显示侧边悬浮的弹窗
         this.floatPanelStyle = {
           left: `${left}px`,
           top: `${top}px`,
